@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg-dark text-text-primary font-sans antialiased;
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-card-dark;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border-dark rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-card-dark border border-border-dark rounded-xl;
+  }
+
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-hover text-white font-semibold px-5 py-2.5 rounded-lg
+      transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+      active:scale-95 shadow-lg shadow-primary/20;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border border-border-dark hover:border-primary text-text-primary
+      font-medium px-5 py-2.5 rounded-lg transition-all duration-200
+      active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-white/5 text-text-muted hover:text-text-primary
+      font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
+
+  .btn-danger {
+    @apply bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30
+      font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
+
+  .input-field {
+    @apply w-full bg-bg-dark border border-border-dark rounded-lg px-4 py-3
+      text-text-primary placeholder-text-muted
+      focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+      transition-all duration-200;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-text-muted mb-1.5;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(45, 45, 78, 0.4) 25%,
+      rgba(99, 102, 241, 0.1) 50%,
+      rgba(45, 45, 78, 0.4) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent-green bg-clip-text text-transparent;
+  }
+
+  .glass {
+    background: rgba(26, 26, 46, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-text-muted
+      hover:text-text-primary hover:bg-white/5 transition-all duration-200 font-medium;
+  }
+
+  .sidebar-link.active {
+    @apply text-primary bg-primary/10 border border-primary/20;
+  }
+
+  .tab-button {
+    @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200
+      text-text-muted hover:text-text-primary;
+  }
+
+  .tab-button.active {
+    @apply bg-primary text-white shadow-lg shadow-primary/30;
+  }
+}
