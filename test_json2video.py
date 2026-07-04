@@ -31,9 +31,13 @@ payload = {
                     "type": "text",
                     "style": "009",
                     "text": "Your AI Script Generator",
-                    "y-align": "center",
-                    "x-align": "center",
-                    "duration": 5
+                    "duration": 5,
+                    "settings": {
+                        "font-size": "60px",
+                        "color": "#ffffff",
+                        "text-align": "center",
+                        "vertical-position": "center"
+                    }
                 }
             ]
         }

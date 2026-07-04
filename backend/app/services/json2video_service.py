@@ -64,11 +64,8 @@ def build_movie_payload(
     # Main scene duration: at least 3 seconds
     main_duration = max(3, duration_seconds - 3)
 
-    project_id = f"script-gen-{str(uuid.uuid4())[:8]}"
-
     payload = {
         "comment": f"AI Script Generator — {prompt[:50]}",
-        "project": project_id,
         "resolution": resolution,
         "quality": "high",
         "scenes": [
@@ -83,12 +80,14 @@ def build_movie_payload(
                         "type": "text",
                         "style": "009",        # Bold animated style
                         "text": hook_text,
-                        "y-align": "center",
-                        "x-align": "center",
-                        "font-size": 60,
-                        "font-color": "#6366f1",
                         "duration": 1.5,
-                        "start": 0
+                        "start": 0,
+                        "settings": {
+                            "font-size": "60px",
+                            "color": "#6366f1",
+                            "text-align": "center",
+                            "vertical-position": "center"
+                        }
                     }
                 ]
             },
@@ -99,28 +98,20 @@ def build_movie_payload(
                 "background-color": "#1a1a2e",
                 "duration": main_duration,
                 "elements": [
-                    # Background gradient overlay
-                    {
-                        "type": "component",
-                        "component": "rectangle",
-                        "width": "100%",
-                        "height": "100%",
-                        "background-color": "#1a1a2e",
-                        "duration": main_duration,
-                        "start": 0
-                    },
                     # Main body text
                     {
                         "type": "text",
                         "style": "001",
                         "text": body_text[:300],   # cap at 300 chars for readability
-                        "y-align": "center",
-                        "x-align": "center",
-                        "font-size": 40,
-                        "font-color": "#e2e2f0",
                         "width": "80%",
                         "duration": main_duration,
-                        "start": 0
+                        "start": 0,
+                        "settings": {
+                            "font-size": "40px",
+                            "color": "#e2e2f0",
+                            "text-align": "center",
+                            "vertical-position": "center"
+                        }
                     },
                     # Built-in TTS voiceover — reads the full voiceover_text aloud
                     {
@@ -135,12 +126,14 @@ def build_movie_payload(
                     {
                         "type": "text",
                         "text": "AI Script Generator",
-                        "font-size": 24,
-                        "font-color": "#8888aa",
                         "x": 30,
                         "y": 30,
                         "duration": main_duration,
-                        "start": 0
+                        "start": 0,
+                        "settings": {
+                            "font-size": "24px",
+                            "color": "#8888aa"
+                        }
                     }
                 ]
             },
@@ -155,12 +148,14 @@ def build_movie_payload(
                         "type": "text",
                         "style": "009",
                         "text": "Follow for more ↑",
-                        "y-align": "center",
-                        "x-align": "center",
-                        "font-size": 55,
-                        "font-color": "#ffffff",
                         "duration": 1.5,
-                        "start": 0
+                        "start": 0,
+                        "settings": {
+                            "font-size": "55px",
+                            "color": "#ffffff",
+                            "text-align": "center",
+                            "vertical-position": "center"
+                        }
                     }
                 ]
             }
