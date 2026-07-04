@@ -9,9 +9,11 @@ env_path = Path(__file__).parent / "backend" / ".env"
 load_dotenv(dotenv_path=env_path)
 
 API_KEY = os.environ.get("JSON2VIDEO_API_KEY")
+if API_KEY:
+    API_KEY = API_KEY.strip()
 print("Using API KEY:", API_KEY[:6] + "..." if API_KEY else None)
 
-BASE_URL = "https://api.json2video.com/v1"
+BASE_URL = "https://api.json2video.com/v2"
 HEADERS = {"x-api-key": API_KEY, "Content-Type": "application/json"}
 
 # 1. Submit a simple test video

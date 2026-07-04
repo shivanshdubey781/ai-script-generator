@@ -14,7 +14,9 @@ else:
     load_dotenv()
 
 JSON2VIDEO_API_KEY = os.environ.get("JSON2VIDEO_API_KEY")
-BASE_URL = "https://api.json2video.com/v1"
+if JSON2VIDEO_API_KEY:
+    JSON2VIDEO_API_KEY = JSON2VIDEO_API_KEY.strip()
+BASE_URL = "https://api.json2video.com/v2"
 HEADERS = {
     "x-api-key": JSON2VIDEO_API_KEY,
     "Content-Type": "application/json"
