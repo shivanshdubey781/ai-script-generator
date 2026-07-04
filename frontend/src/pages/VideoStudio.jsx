@@ -194,7 +194,7 @@ export default function VideoStudio() {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
               Video Studio
             </h1>
-            <p className="text-sm text-[#8888aa]">AI video + voiceover in one click</p>
+            <p className="text-sm text-[#8888aa]">AI video + voiceover in one click · Powered by JSON2Video (600 free credits · ~10 min video)</p>
           </div>
         </div>
       </div>

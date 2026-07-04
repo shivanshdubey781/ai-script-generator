@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from app.core.deps import get_current_user
 from app.database.db import get_collection
 from app.models.video_job import make_video_job, now_utc
-from app.services import magic_hour_service, tts_service, video_assembly
+from app.services import json2video_service, tts_service, video_assembly
 
 router = APIRouter(prefix="/video", tags=["video"])
 
@@ -218,106 +218,71 @@ def get_video_history(current_user: dict = Depends(get_current_user)):
 def _run_pipeline(job_id: str, job: dict):
     """
     Full video generation pipeline (runs in FastAPI BackgroundTask):
-    1. Submit to Magic Hour → get provider_job_id
-    2. Poll Magic Hour until video URL is ready (~60s)
-    3. Download raw video from Magic Hour
-    4. Generate English voiceover with gTTS
-    5. Merge video + audio with FFmpeg (or skip if FFmpeg not available)
-    6. Mark job done
+    1. Submit to JSON2Video (built-in neural TTS voice included)
+    2. Poll JSON2Video until video URL is ready (~60s - 300s)
+    3. Download raw video to serve locally
+    4. Mark job done
     """
     raw_video_path = None
-    audio_path = None
 
     try:
-        # ── Step 1: Submit to Magic Hour ─────────────────────────
+        # ── Step 1: Submit to JSON2Video ─────────────────────────
         _update_job(job_id, status="generating_video", progress=10)
         try:
-            result = magic_hour_service.generate_text_to_video(
+            result = json2video_service.generate_video(
                 prompt=job["prompt"],
-                duration_seconds=job.get("duration_seconds", 5),
+                voiceover_text=job["voiceover_text"],
                 aspect_ratio=job.get("aspect_ratio", "9:16"),
-                resolution=job.get("resolution", "480p"),
+                duration_seconds=job.get("duration_seconds", 5),
             )
-            provider_job_id = result["job_id"]
-            _update_job(job_id, provider_job_id=provider_job_id, progress=20)
+            provider_job_id = result["project_id"]
+            _update_job(
+                job_id,
+                provider_job_id=provider_job_id,
+                progress=20,
+                provider="json2video"
+            )
         except Exception as e:
-            _update_job(job_id, status="failed", error_message=str(e))
+            _update_job(job_id, status="failed", error_message=f"JSON2Video submit failed: {e}")
             return
 
         # ── Step 2: Poll until video ready ───────────────────────
-        _update_job(job_id, progress=30)
+        _update_job(job_id, status="adding_voice", progress=40)
         try:
-            poll = magic_hour_service.poll_video_status(provider_job_id, max_wait_seconds=180)
-            if poll["status"] != "complete":
-                _update_job(job_id, status="failed", error_message=poll.get("error", "Video generation failed"))
+            poll_result = json2video_service.poll_video_status(
+                provider_job_id, max_wait_seconds=300
+            )
+            if poll_result["status"] != "complete":
+                _update_job(job_id, status="failed", error_message=poll_result.get("error", "Video generation failed"))
                 return
-            video_url = poll["video_url"]
-            _update_job(job_id, video_url=video_url, progress=50)
+            video_url = poll_result["video_url"]
+            _update_job(job_id, video_url=video_url, progress=60)
         except Exception as e:
             _update_job(job_id, status="failed", error_message=f"Polling failed: {e}")
             return
 
         # ── Step 3: Download video ────────────────────────────────
-        _update_job(job_id, status="adding_voice", progress=55)
+        _update_job(job_id, status="assembling", progress=75)
         try:
             raw_video_path = video_assembly.download_video(video_url)
-            _update_job(job_id, progress=65)
-        except Exception as e:
-            _update_job(job_id, status="failed", error_message=f"Download failed: {e}")
-            return
-
-        # ── Step 4: Generate voiceover ────────────────────────────
-        _update_job(job_id, progress=70)
-        try:
-            audio_path = tts_service.generate_voiceover(
-                text=job["voiceover_text"], language="en"
+            _update_job(
+                job_id,
+                final_video_path=raw_video_path,
+                status="done",
+                progress=100
             )
-            _update_job(job_id, audio_path=audio_path, progress=80)
+            logger.info("Job %s completed successfully: %s", job_id, raw_video_path)
         except Exception as e:
-            _update_job(job_id, status="failed", error_message=f"Voiceover failed: {e}")
-            return
-
-        # ── Step 5: Merge + watermark removal with FFmpeg ─────────
-        _update_job(job_id, status="assembling", progress=85)
-        if video_assembly.ffmpeg_available():
-            try:
-                # merge_video_and_audio: watermark removal + audio merge in one pass
-                final_path = video_assembly.merge_video_and_audio(raw_video_path, audio_path)
-                video_assembly.cleanup_temp_files(raw_video_path, audio_path)
-                _update_job(job_id, final_video_path=final_path, progress=100, status="done")
-                logger.info("Job %s completed successfully: %s", job_id, final_path)
-            except Exception as e:
-                logger.error("Job %s merge failed: %s", job_id, e)
-                # Full merge failed — try watermark-only removal as fallback
-                try:
-                    clean_path = video_assembly.remove_watermark(raw_video_path)
-                    video_assembly.cleanup_temp_files(audio_path)
-                    _update_job(
-                        job_id,
-                        final_video_path=clean_path,
-                        progress=100,
-                        status="done",
-                        error_message="Voiceover skipped (merge error)",
-                    )
-                except Exception as e2:
-                    logger.error("Job %s watermark removal also failed: %s", job_id, e2)
-                    # Last resort — serve raw video
-                    _update_job(
-                        job_id,
-                        final_video_path=raw_video_path,
-                        progress=100,
-                        status="done",
-                        error_message="Processing skipped",
-                    )
-        else:
-            # FFmpeg not installed — stream CDN URL via proxy (watermark visible)
+            logger.error("Job %s download failed, fallback to CDN URL: %s", job_id, e)
+            # Fall back to serving video_url from CDN directly if download failed
             _update_job(
                 job_id,
                 final_video_path=video_url,
-                progress=100,
                 status="done",
-                error_message="FFmpeg not installed — install FFmpeg to enable watermark removal",
+                progress=100,
+                error_message=f"Download failed: {e}"
             )
+            return
 
     except Exception as e:
         _update_job(job_id, status="failed", error_message=f"Pipeline error: {e}")
